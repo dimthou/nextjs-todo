@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { findTodo, updateTodo, deleteTodo } from './lib/todoStore';
-import { Todo } from './lib/todoStore';
+import { findTodo, updateTodo, deleteTodo, Todo } from '@lib/todoStore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const {

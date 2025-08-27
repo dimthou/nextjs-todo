@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import type { Todo } from './api/todo/lib/todoStore';
+import type { Todo } from '@lib/todoStore';
 
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -71,18 +71,18 @@ export default function TodoApp() {
     }
     if (editingId) {
       const existingTodo = todos.find(t => t.id === editingId);
-      const isDuplicate = todos.some(t => t.id !== editingId && t.todo.toLowerCase() === trimmedValue.toLowerCase());
+      const isDuplicate = todos.some(t => t.id !== editingId && t.text.toLowerCase() === trimmedValue.toLowerCase());
       if (isDuplicate) {
         setWarning('This todo already exists!');
         setTimeout(() => setWarning(''), 3000);
         return;
       }
       if (existingTodo) {
-        updateTodo(editingId, { ...existingTodo, todo: trimmedValue });
+        updateTodo(editingId, { ...existingTodo, text: trimmedValue });
       }
       setEditingId(null);
     } else {
-      const isDuplicate = todos.some(t => t.todo.toLowerCase() === trimmedValue.toLowerCase());
+      const isDuplicate = todos.some(t => t.text.toLowerCase() === trimmedValue.toLowerCase());
       if (isDuplicate) {
         setWarning('This todo already exists!');
         setTimeout(() => setWarning(''), 3000);
@@ -90,9 +90,9 @@ export default function TodoApp() {
       }
       const newTodo: Todo = {
         id: uuidv4(),
-        todo: trimmedValue,
-        isCompleted: false,
-        createdAt: new Date().toISOString(),
+        text: trimmedValue,
+        completed: false,
+        created_at: new Date().toISOString(),
       };
       createTodo(newTodo);
     }
@@ -103,7 +103,7 @@ export default function TodoApp() {
 
   const handleEdit = (todo: Todo) => {
     setEditingId(todo.id);
-    setInputValue(todo.todo);
+    setInputValue(todo.text);
     setFilterText('');
   };
 
@@ -112,7 +112,7 @@ export default function TodoApp() {
   };
 
   const toggleComplete = (todo: Todo) => {
-    updateTodo(todo.id, { ...todo, isCompleted: !todo.isCompleted });
+    updateTodo(todo.id, { ...todo, completed: !todo.completed });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +124,7 @@ export default function TodoApp() {
   };
 
   const filteredTodos = todos.filter(todo =>
-    todo.todo.toLowerCase().includes(filterText.toLowerCase())
+    todo.text.toLowerCase().includes(filterText.toLowerCase())
   );
 
   const showNoResults = filterText && filteredTodos.length === 0;
@@ -161,14 +161,14 @@ export default function TodoApp() {
               onMouseEnter={() => setHoveredId(todo.id)}
               onMouseLeave={() => setHoveredId(null)}
             >
-              <span style={{ textDecoration: todo.isCompleted ? 'line-through' : 'none' }}>
-                {todo.todo}
+              <span style={{ textDecoration: todo.completed ? 'line-through' : 'none' }}>
+                {todo.text}
               </span>
               {hoveredId === todo.id && (
                 <>
                   {' '}
                   <button onClick={() => toggleComplete(todo)}>
-                    {todo.isCompleted ? 'Mark Incomplete' : 'Mark Complete'}
+                    {todo.completed ? 'Mark Incomplete' : 'Mark Complete'}
                   </button>
                   {' '}
                   <button onClick={() => handleEdit(todo)}>
@@ -185,7 +185,7 @@ export default function TodoApp() {
         )}
       </ul>
       <p>
-        Total todos: {todos.length} | Completed: {todos.filter(t => t.isCompleted).length} | Active: {todos.filter(t => !t.isCompleted).length}
+        Total todos: {todos.length} | Completed: {todos.filter(t => t.completed).length} | Active: {todos.filter(t => !t.completed).length}
       </p>
     </div>
   );

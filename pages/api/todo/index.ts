@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getTodos, createTodo } from './lib/todoStore';
-import { Todo } from './lib/todoStore';
+import { getTodos, createTodo, Todo } from '@lib/todoStore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   switch (req.method) {
