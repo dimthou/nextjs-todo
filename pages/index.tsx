@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import type { Todo } from '@lib/todoStore';
 
@@ -9,6 +9,14 @@ export default function TodoApp() {
   const [filterText, setFilterText] = useState<string>('');
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [warning, setWarning] = useState<string>('');
+  const [isSorting, setIsSorting] = useState(false);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [groupByCompleted, setGroupByCompleted] = useState(false);
+  
+  // Derived state for incomplete and completed todos
+  const incompleteTodos = todos.filter(todo => !todo.completed);
+  const completedTodos = todos.filter(todo => todo.completed);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetchTodos();
@@ -105,6 +113,9 @@ export default function TodoApp() {
     setEditingId(todo.id);
     setInputValue(todo.text);
     setFilterText('');
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
   };
 
   const handleRemove = (id: string) => {
@@ -123,7 +134,66 @@ export default function TodoApp() {
     }
   };
 
-  const filteredTodos = todos.filter(todo =>
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setInputValue('');
+    setFilterText('');
+  };
+
+  // Sort function that can be applied to any list
+  const sortTodos = (todosToSort: Todo[]) => {
+    if (!isSorting) return todosToSort;
+    
+    return [...todosToSort].sort((a, b) => {
+      const comparison = a.text.toLowerCase().localeCompare(b.text.toLowerCase());
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  };
+
+  // Get the final list to display based on grouping and sorting preferences
+  const getDisplayTodos = () => {
+    if (groupByCompleted) {
+      // When grouped, sort within each group if sorting is enabled
+      const sortedIncomplete = sortTodos(incompleteTodos);
+      const sortedComplete = sortTodos(completedTodos);
+      return [...sortedIncomplete, ...sortedComplete];
+    } else {
+      // When not grouped, sort the entire list if sorting is enabled
+      return sortTodos(todos);
+    }
+  };
+
+  const handleSortName = () => {
+    setIsSorting(current => {
+      if (!current) {
+        // If turning on sorting, start with ascending
+        setSortDirection('asc');
+        return true;
+      } else {
+        // If already sorting and same direction, turn off sorting
+        if (sortDirection === 'desc') {
+          return false;
+        }
+        // Otherwise toggle direction
+        setSortDirection('desc');
+        return true;
+      }
+    });
+  };
+
+  const handleGroupChange = () => {
+    setGroupByCompleted(prev => !prev);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape' && editingId) {
+      handleCancelEdit();
+    }
+  };
+
+  // Get organized todos and then apply filtering
+  const displayTodos = getDisplayTodos();
+  const filteredTodos = displayTodos.filter(todo =>
     todo.text.toLowerCase().includes(filterText.toLowerCase())
   );
 
@@ -137,16 +207,36 @@ export default function TodoApp() {
           type="text"
           value={inputValue}
           onChange={handleInputChange}
+          onKeyDown={handleInputKeyDown}
           placeholder={editingId ? "Edit todo..." : "Add new todo or filter..."}
+          ref={inputRef}
         />
+        <div style={{ marginTop: '8px', display: 'flex', gap: '16px' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={isSorting}
+              onChange={handleSortName}
+            />
+            Sort Name {!isSorting ? '' : sortDirection === 'asc' ? '(A to Z)' : '(Z to A)'}
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={groupByCompleted}
+              onChange={handleGroupChange}
+            />
+            Group Completed
+          </label>
+        </div>
       </form>
       {warning && (
         <div style={{ color: 'red' }}>{warning}</div>
       )}
       {editingId && (
         <div>
-          Editing mode: Press Enter to save or{' '}
-          <button onClick={() => { setEditingId(null); setInputValue(''); }}>
+          Editing mode: Press Enter to save or ESC to cancel{' '}
+          <button onClick={handleCancelEdit}>
             Cancel
           </button>
         </div>
